@@ -51,44 +51,6 @@ spec:
               - name: TZ
                 value: '{{ .global_time_zone }}'
 
-              - name: ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_HOST
-                valueFrom:
-                  secretKeyRef:
-                    name: zitadel-smtp-credentials
-                    key: host
-
-              - name: ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_USER
-                valueFrom:
-                  secretKeyRef:
-                    name: zitadel-smtp-credentials
-                    key: user
-
-              - name: ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_SMTP_PASSWORD
-                valueFrom:
-                  secretKeyRef:
-                    name: zitadel-smtp-credentials
-                    key: password
-
-              - name: ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_TLS
-                value: 'true'
-
-              - name: ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_FROM
-                valueFrom:
-                  secretKeyRef:
-                    name: zitadel-smtp-credentials
-                    key: from_address
-
-              - name: ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_FROMNAME
-                valueFrom:
-                  secretKeyRef:
-                    name: zitadel-smtp-credentials
-                    key: from_name
-
-              - name: ZITADEL_DEFAULTINSTANCE_SMTPCONFIGURATION_REPLYTOADDRESS
-                valueFrom:
-                  secretKeyRef:
-                    name: zitadel-smtp-credentials
-                    key: reply_to_address
               - name: ZITADEL_LOG_LEVEL
                 value: info
 

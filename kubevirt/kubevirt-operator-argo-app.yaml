@@ -1,6 +1,6 @@
-# KubeVirt extends Kubernetes by adding additional virtualization resource types 
-# (especially the VM type) through Kubernetes's Custom Resource Definitions API. 
-# By using this mechanism, the Kubernetes API can be used to manage these VM resources 
+# KubeVirt extends Kubernetes by adding additional virtualization resource types
+# (especially the VM type) through Kubernetes's Custom Resource Definitions API.
+# By using this mechanism, the Kubernetes API can be used to manage these VM resources
 # alongside all other resources Kubernetes provides.
 # https://github.com/kubevirt/kubevirt
 ---
@@ -9,6 +9,8 @@ kind: Application
 metadata:
   name: kubevirt-operator
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
 spec:
   project: kubevirt
   destination:
@@ -19,43 +21,43 @@ spec:
     targetRevision: 0.2.7
     chart: kubevirt
     helm:
-      values: |        
+      values: |
         replicaCount: 1
-        
+
         image:
           repository: quay.io/kubevirt/virt-operator
           pullPolicy: IfNotPresent
           tag: "v1.2.0"
-        
+
         imagePullSecrets: []
         nameOverride: ""
         fullnameOverride: ""
-        
+
         serviceAccount:
           create: true
           annotations: {}
           name: "kubevirt-operator"
-        
+
         podAnnotations: {}
-        
+
         podSecurityContext: {}
-        
+
         securityContext:
           privileged: true
-        
+
         resources: {}
-        
+
         nodeSelector: {}
         tolerations:
           - key: CriticalAddonsOnly
             operator: Exists
-            
+
         monitorNamespace: "prometheus"
-        prometheus: 
+        prometheus:
           enabled: true
           serviceName: "prom-stack-kube-prometheus-prometheus"
           serviceNamesapce: "prometheus"
-        
+
         affinity:
           podAntiAffinity:
             preferredDuringSchedulingIgnoredDuringExecution:
@@ -68,11 +70,11 @@ spec:
                           - virt-operator
                   topologyKey: kubernetes.io/hostname
                 weight: 1
-        
+
         priorityclass:
           create: true
           value: 1000000000
-          
+
         permittedHostDevices:
           pciHostDevices:
           - pciVendorSelector: "10de:2782"
@@ -84,12 +86,12 @@ spec:
           mediatedDevices:
           - mdevNameSelector: "GRID M60-2Q"
             resourceName: "nvidia.com/GRID_M60-2Q"
-        
+
         mediatedDevicesTypes:
           - nvidia-18
-        
+
         useEmulation: false
-        
+
         featureGates:
           - ExpandDisks
           - CPUManager

@@ -1,0 +1,39 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: kubevirt-s3-provider-app-set
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  goTemplate: true
+  # generator allows us to source specific values from an external k8s secret
+  generators:
+    - plugin:
+        configMapRef:
+          name: secret-var-plugin-generator
+        input:
+          parameters:
+            secret_vars:
+              - kubevirt_s3_provider
+  template:
+    metadata:
+      name: kubevirt-{{ .kubevirt_s3_provider }}
+      annotations:
+        argocd.argoproj.io/sync-wave: "2"
+    spec:
+      project: kubevirt
+      destination:
+        server: "https://kubernetes.default.svc"
+        namespace: kubevirt
+      syncPolicy:
+        syncOptions:
+          - ApplyOutOfSyncOnly=true
+        automated:
+          prune: true
+          selfHeal: true
+      source:
+        repoURL: https://github.com/small-hack/argocd-apps.git
+        path: kubevirt/storage/{{ .kubevirt_s3_provider }}/
+        targetRevision: main

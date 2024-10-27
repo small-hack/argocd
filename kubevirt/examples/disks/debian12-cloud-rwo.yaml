@@ -9,7 +9,7 @@ metadata:
     cdi.kubevirt.io/storage.bind.immediate.requested: "true"
     cdi.kubevirt.io/storage.import.endpoint: "https://cloud.debian.org/images/cloud/bookworm/daily/latest/debian-12-generic-amd64-daily.qcow2"
 spec:
-  storageClassName: local-path
+  storageClassName: seaweedfs-storage
   accessModes:
     - ReadWriteOnce
   resources:

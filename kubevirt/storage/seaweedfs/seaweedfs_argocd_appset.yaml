@@ -1,0 +1,211 @@
+---
+# webapp is deployed 3rd because we need secrets and persistent volumes up first
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: kubevirt-seaweedfs-appset
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  goTemplate: true
+  # generator allows us to source specific values from an external k8s secret
+  generators:
+    - plugin:
+        configMapRef:
+          name: secret-var-plugin-generator
+        input:
+          parameters:
+            secret_vars:
+              - global_cluster_issuer
+              - kubevirt_s3_region
+              - kubevirt_s3_endpoint
+  template:
+    metadata:
+      name: kubevirt-seaweedfs-app
+      annotations:
+        argocd.argoproj.io/sync-wave: "2"
+    spec:
+      project: kubevirt
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: kubevirt
+      syncPolicy:
+        syncOptions:
+          - ApplyOutOfSyncOnly=true
+        automated:
+          prune: true
+          selfHeal: true
+      source:
+        repoURL: 'https://seaweedfs.github.io/seaweedfs/helm'
+        targetRevision: 3.68.0
+        chart: seaweedfs
+        helm:
+          releaseName: kubevirt-seaweedfs
+          valuesObject:
+            global:
+              createClusterRole: true
+              imageName: chrislusf/seaweedfs
+              imagePullPolicy: IfNotPresent
+              enableSecurity: false
+              securityConfig:
+                jwtSigning:
+                  volumeWrite: true
+                  volumeRead: false
+                  filerWrite: false
+                  filerRead: false
+              serviceAccountName: "kubevirt-seaweedfs"
+              certificates:
+                alphacrds: false
+              monitoring:
+                enabled: false
+                gatewayHost: null
+                gatewayPort: null
+              enableReplication: false
+              replicationPlacment: "001"
+              extraEnvironmentVars:
+                WEED_CLUSTER_DEFAULT: "sw"
+                WEED_CLUSTER_SW_MASTER: "seaweedfs-master.seaweedfs:9333"
+                WEED_CLUSTER_SW_FILER: "seaweedfs-filer-client.seaweedfs:8888"
+            image:
+              registry: ""
+              repository: ""
+            master:
+              enabled: true
+              replicas: 1
+              port: 9333
+              grpcPort: 19333
+              metricsPort: 9327
+              ipBind: "0.0.0.0"
+              loggingOverrideLevel: null
+              pulseSeconds: null
+              garbageThreshold: null
+              metricsIntervalSec: 15
+              defaultReplication: "000"
+              disableHttp: false
+              config: |-
+                # Enter any extra configuration for master.toml here.
+                # It may be be a multi-line string.
+              data:
+                type: "emptyDir"
+                # claimName: "swfs-master-data"
+              logs:
+                type: "hostPath"
+                size: ""
+                storageClass: ""
+                hostPathPrefix: /storage
+              livenessProbe:
+                enabled: true
+                httpGet:
+                  path: /cluster/status
+                  scheme: HTTP
+                initialDelaySeconds: 10
+                periodSeconds: 2
+                successThreshold: 1
+                failureThreshold: 100
+                timeoutSeconds: 10
+              readinessProbe:
+                enabled: true
+                httpGet:
+                  path: /cluster/status
+                  scheme: HTTP
+                initialDelaySeconds: 10
+                periodSeconds: 2
+                successThreshold: 2
+                failureThreshold: 100
+                timeoutSeconds: 10
+            volume:
+              enabled: true
+              port: 8080
+              grpcPort: 18080
+              metricsPort: 9327
+              ipBind: "0.0.0.0"
+              replicas: 1
+              loggingOverrideLevel: null
+              fileSizeLimitMB: null
+              minFreeSpacePercent: 7
+              dataDirs:
+                - name: data
+                  type: "existingClaim"
+                  claimName: "swfs-volume-data"
+                  maxVolumes: 0
+              livenessProbe:
+                enabled: true
+                httpGet:
+                  path: /status
+                  scheme: HTTP
+                initialDelaySeconds: 10
+                periodSeconds: 2
+                successThreshold: 1
+                failureThreshold: 100
+                timeoutSeconds: 10
+              readinessProbe:
+                enabled: true
+                httpGet:
+                  path: /status
+                  scheme: HTTP
+                initialDelaySeconds: 10
+                periodSeconds: 2
+                successThreshold: 2
+                failureThreshold: 100
+                timeoutSeconds: 10
+            filer:
+              enabled: true
+              replicas: 1
+              port: 8888
+              grpcPort: 18888
+              metricsPort: 9327
+              encryptVolumeData: true
+              enablePVC: true
+              storage: 10Gi
+              data:
+                type: "existingClaim"
+                claimName: "swfs-filer-data"
+              s3:
+                enabled: true
+                port: 8333
+                httpsPort: 0
+                allowEmptyFolder: false
+                domainName: '{{ .kubevirt_s3_endpoint }}'
+                enableAuth: true
+                existingConfigSecret: seaweedfs-s3-secret
+                createBuckets:
+                  - name: kubevirt
+                    anonymousRead: false
+                  - name: kubevirt-postgres
+                    anonymousRead: false
+              livenessProbe:
+                enabled: true
+                httpGet:
+                  path: /
+                  scheme: HTTP
+                initialDelaySeconds: 10
+                periodSeconds: 2
+                successThreshold: 1
+                failureThreshold: 100
+                timeoutSeconds: 10
+              readinessProbe:
+                enabled: true
+                httpGet:
+                  path: /
+                  scheme: HTTP
+                initialDelaySeconds: 10
+                periodSeconds: 2
+                successThreshold: 2
+                failureThreshold: 100
+                timeoutSeconds: 10
+            s3:
+              enabled: false
+              ingress:
+                enabled: true
+                className: "nginx"
+                # host: false for "*" hostname
+                host: '{{ .kubevirt_s3_endpoint }}'
+                # additional ingress annotations for the s3 endpoint
+                annotations:
+                  nginx.ingress.kubernetes.io/proxy-body-size: 1G
+                  cert-manager.io/cluster-issuer: '{{ .global_cluster_issuer }}'
+                tls:
+                  - secretName: kubevirt-seaweedfs-tls
+                    hosts:
+                      - '{{ .kubevirt_s3_endpoint }}'

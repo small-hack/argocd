@@ -9,7 +9,7 @@ metadata:
     cdi.kubevirt.io/storage.bind.immediate.requested: "true"
     cdi.kubevirt.io/storage.import.endpoint: "https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
 spec:
-  storageClassName: local-path
+  storageClassName: seaweedfs-storage
   accessModes:
     - ReadWriteOnce
   resources:

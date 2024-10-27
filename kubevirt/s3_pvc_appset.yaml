@@ -1,0 +1,89 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: kubevirt-s3-pvc-app-set
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  goTemplate: true
+  # generator allows us to source specific values from an external k8s secret
+  generators:
+    - plugin:
+        configMapRef:
+          name: secret-var-plugin-generator
+        input:
+          parameters:
+            secret_vars:
+              - kubevirt_s3_provider
+              - kubevirt_s3_backup_endpoint
+              - kubevirt_s3_backup_bucket
+              - kubevirt_s3_backup_region
+              - kubevirt_s3_pvc_capacity
+              - kubevirt_pvc_backup_schedule
+              - global_pvc_storage_class
+  template:
+    metadata:
+      name: kubevirt-s3-pvc
+      annotations:
+        argocd.argoproj.io/sync-wave: "1"
+    spec:
+      project: kubevirt
+      destination:
+        server: "https://kubernetes.default.svc"
+        namespace: kubevirt
+      syncPolicy:
+        syncOptions:
+          - ApplyOutOfSyncOnly=true
+        automated:
+          prune: true
+          selfHeal: true
+      source:
+        repoURL: https://github.com/small-hack/argocd-apps.git
+        path: s3_persistence_and_backups/
+        targetRevision: main
+        helm:
+          valuesObject:
+            provider: '{{ .kubevirt_s3_provider }}'
+            pvc_capacity: '{{ .kubevirt_s3_pvc_capacity }}'
+            pvc_storageClassName: '{{ .global_pvc_storage_class }}'
+
+            seaweedfs:
+              # -- deploy a master data PVC for seaweedfs
+              master_pvc: false
+
+            # not in use yet
+            k8up:
+              backup_name: "kubevirt-nightly-backup"
+              # -- user to run the backups as
+              securityContext:
+                runAsUser: 0
+
+              backup_name: 'kubevirt-nightly-backup'
+
+              # -- can be set to 's3' or 'local'
+              backup_type: 's3'
+
+              s3:
+                bucket: '{{ .kubevirt_s3_backup_bucket }}'
+                endpoint: '{{ .kubevirt_s3_backup_endpoint }}'
+                accessKeyIDSecretRef:
+                  name: 's3-backups-credentials'
+                  key: 'accessKeyId'
+                  optional: false
+                secretAccessKeySecretRef:
+                  name: 's3-backups-credentials'
+                  key: 'secretAccessKey'
+                  optional: false
+
+              repoPasswordSecretRef:
+                name: 's3-backups-credentials'
+                key: 'resticRepoPassword'
+
+              prometheus_url: 'push-gateway.prometheus.svc:9091'
+
+              schedules:
+                backup: '{{ .kubevirt_pvc_backup_schedule }}'
+                check: '0 0 * * *'
+                prune: '0 0 * * *'

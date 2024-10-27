@@ -1,6 +1,6 @@
-# KubeVirt extends Kubernetes by adding additional virtualization resource types 
-# (especially the VM type) through Kubernetes's Custom Resource Definitions API. 
-# By using this mechanism, the Kubernetes API can be used to manage these VM resources 
+# KubeVirt extends Kubernetes by adding additional virtualization resource types
+# (especially the VM type) through Kubernetes's Custom Resource Definitions API.
+# By using this mechanism, the Kubernetes API can be used to manage these VM resources
 # alongside all other resources Kubernetes provides.
 # https://github.com/kubevirt/kubevirt
 ---
@@ -9,6 +9,8 @@ kind: Application
 metadata:
   name: kubevirt-cdi
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
 spec:
   destination:
     name: ''
@@ -19,20 +21,20 @@ spec:
     repoURL: 'https://cloudymax.github.io/kubevirt-community-stack/'
     targetRevision: 0.1.5
     chart: kubevirt-cdi
-    helm: 
+    helm:
       values: |
         replicaCount: 1
-        
+
         image:
           repository: quay.io/kubevirt/cdi-operator
           pullPolicy: IfNotPresent
           tag: ""
-        
+
         serviceAccount:
           create: true
           annotations: {}
           name: "kubevirt-cdi-service-account"
-        
+
         securityContext:
           capabilities:
             drop:
@@ -41,36 +43,36 @@ spec:
           allowPrivilegeEscalation: false
           seccompProfile:
             type: RuntimeDefault
-        
+
         service:
           type: ClusterIP
           port: 8080
           name: metrics
           protocol: TCP
-        
+
         uploadProxy:
           type: ClusterIP
           port: 443
           targetPort: 8443
           protocol: TCP
-        
+
         ingress:
           enabled: false
-       
+
         resources:
           requests:
             cpu: 10m
             memory: 150Mi
-        
+
         nodeSelector:
           kubernetes.io/os: linux
-        
+
         tolerations:
         - key: CriticalAddonsOnly
           operator: Exists
-        
+
         affinity: {}
-        
+
         cdi:
           featureGates:
           - HonorWaitForFirstConsumer

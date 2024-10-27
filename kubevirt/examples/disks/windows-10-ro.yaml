@@ -9,7 +9,7 @@ metadata:
     cdi.kubevirt.io/storage.bind.immediate.requested: "true"
     cdi.kubevirt.io/storage.import.endpoint: "https://f004.backblazeb2.com/file/buildstar-public-share/windows10.iso"
 spec:
-  storageClassName: local-path
+  storageClassName: seaweedfs-storage
   accessModes:
     - ReadWriteOnce
   resources:
