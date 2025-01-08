@@ -187,11 +187,26 @@ spec:
                 - name: "PGSSLROOTCERT"
                   value: /etc/secrets/ca/ca.crt
 
+                - name: "REDIS_HOST"
+                  value: valkey-primary.nextcloud.svc.cluster.local
+
+                - name: "REDIS_HOST_PORT"
+                  value: "6379"
+
+                - name: "REDIS_HOST_PASSWORD"
+                  valueFrom:
+                    secretKeyRef:
+                      name: nextcloud-redis-credentials
+                      key: redis_password
+
               extraVolumes:
                 # - name: before-starting-scripts
                 #   configMap:
                 #     name: before-starting-scripts
                 #     defaultMode: 0550
+                #- name: certs
+                #  secret:
+                #    secretName: valkey-crt
 
                 - name: postgres-ca
                   secret:
@@ -206,6 +221,8 @@ spec:
               extraVolumeMounts:
                 # - name: before-starting-scripts
                 #   mountPath: /docker-entrypoint-hooks.d/before-starting
+                #- mountPath: /certs
+                #  name: certs
 
                 - name: postgres-ca
                   mountPath: /etc/secrets/ca
@@ -213,14 +230,19 @@ spec:
                 - name: postgres-client-certs
                   mountPath: /etc/secrets/nextcloud
 
-              # defaultConfigs:
-              #   redis.config.php: false
+              defaultConfigs:
+                redis.config.php: true
 
               phpConfigs:
                 #  www.conf: |-
                 #    [www]
                 #    user = www-data
                 #    group = www-data
+                #redis-cluster.ini: |-
+                #  redis.session.locking_enabled=1
+                #  redis.session.lock_retries=-1
+                #  redis.session.lock_wait_time=10000
+
                 www.conf: |-
                   [www]
                   security.limit_extensions = .php .css .js .html
@@ -243,6 +265,19 @@ spec:
                   php_admin_value[post_max_size] = 10G
 
               configs:
+                redis.config.php: |-
+                  <?php
+                  $CONFIG = [
+                    'memcache.local' => '\OC\Memcache\Redis',
+                    'memcache.distributed' => '\\OC\\Memcache\\Redis',
+                    'memcache.locking' => '\\OC\\Memcache\\Redis',
+                    'redis' => [
+                      'host' => 'getenv("REDIS_HOST")',
+                      'port' => 'getenv("REDIS_HOST_PORT")',
+                      'password' => 'getenv(REDIS_HOST_PASSWORD)',
+                    ],
+                  ];
+
                 logging.config.php: |-
                   <?php
                   $CONFIG = array (

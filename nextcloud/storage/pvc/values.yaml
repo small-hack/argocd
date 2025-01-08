@@ -18,6 +18,16 @@ config_pvc:
   # -- storage capacity for the nextcloud config pvc
   storage: "2Gi"
 
+valkey_pvc:
+  # -- enable nextcloud configuration pvc
+  enabled: true
+  # -- default storage class name to use for config pvc
+  storageClassName: "local-path"
+  # -- default access mode for the config pvc
+  accessMode: "ReadWriteOnce"
+  # -- storage capacity for the nextcloud config pvc
+  storage: "2Gi"
+
 # -- tolerate affinity
 affinity: {}
 

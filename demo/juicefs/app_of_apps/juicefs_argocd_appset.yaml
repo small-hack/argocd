@@ -17,9 +17,9 @@ spec:
         input:
           parameters:
             secret_vars:
-              - juicefs_redis_password
-              - juicefs_redis_url
-              - juicefs_redis_port
+              - juicefs_valkey_password
+              - juicefs_valkey_url
+              - juicefs_valkey_port
               - juicefs_s3_key_id
               - juicefs_s3_secret_key
               - juicefs_s3_bucket_url
@@ -78,15 +78,15 @@ spec:
                   - secretName: juicefs-tls
                     hosts:
                       - "{{ .juicefs_s3_dshboard_url }}"
-    
+
             storageClasses:
-            - name: "juicefs-sc"
+            - name: "juicefs"
               enabled: true
               reclaimPolicy: Delete
               allowVolumeExpansion: true
               backend:
                 name: "juicefs"
-                metaurl: "redis://:{{ .juicefs_redis_password }}@{{ .juicefs_redis_url }}:{{ .juicefs_redis_port }}/1"
+                metaurl: "redis://:{{ .juicefs_valkey_password }}@{{ .juicefs_valkey_url }}:{{ .juicefs_valkey_port }}/1"
                 storage: "s3"
                 bucket: "{{ .juicefs_s3_bucket_url }}"
                 accessKey: {{ .juicefs_s3_key_id }}

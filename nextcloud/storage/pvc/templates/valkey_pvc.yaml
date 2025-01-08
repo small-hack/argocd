@@ -1,0 +1,30 @@
+{{- if eq .Values.valkey_pvc.enabled true }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nextcloud-valkey-primary
+  annotations:
+    k8up.io/backup: 'true'
+spec:
+  storageClassName: {{ .Values.valkey_pvc.storageClassName }}
+  accessModes:
+    - {{ .Values.valkey_pvc.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.valkey_pvc.storage }}
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: nextcloud-valkey-replica
+  annotations:
+    k8up.io/backup: 'true'
+spec:
+  storageClassName: {{ .Values.valkey_pvc.storageClassName }}
+  accessModes:
+    - {{ .Values.valkey_pvc.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.valkey_pvc.storage }}
+{{- end }}
